@@ -1,0 +1,13 @@
+# Archivos compilados y ejecutables
+*.o
+*.out
+rw
+rw_tsan
+
+# Archivos generados por experimentos o trazas
+resultados_e1.txt
+resultados_e2.txt
+traza_*.txt
+
+# Carpeta local de configuracion de VS Code (opcional)
+.vscode/

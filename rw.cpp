@@ -196,28 +196,51 @@ int main(int argc, char** argv) {
         }
     }
 
-    std::printf("modo=%s politica=%s L=%ld E=%ld K=%ld dur_lec_us=%ld dur_esc_us=%ld traza=%s\n",
-                modo.c_str(), pol.c_str(), L, E, K, dl, de, traza_on ? "SI" : "NO");
-    std::printf("operaciones=%ld (lecturas=%ld escrituras=%ld)\n", (L + E) * K, L * K, E * K);
-    std::printf("version_final=%ld (esperado %ld) doble_version_final=%ld (esperado %ld)\n",
-                reg.version, esperado_v, reg.doble_version, esperado_d);
-    std::printf("inconsistencias=%ld violaciones_exclusion=%ld lectores_simultaneos_max=%d\n",
-                incons, diag.violaciones.load(), diag.max_lect.load());
-    std::printf("tiempo_pared_s=%.6f tiempo_cpu_s=%.6f\n", pared, cpu);
-    std::printf("espera_lectoras_us: prom=%.2f max=%.2f | espera_escritoras_us: prom=%.2f max=%.2f\n",
-                lec_prom, ml / 1e3, esc_prom, me / 1e3);
-    if (modo == "atomic")
-        std::printf("fallos_ocupado=%ld fallos_escritores_esperando=%ld fallos_cas=%ld\n",
+    std::printf("\n============================================================\n");
+    std::printf("  RESUMEN DE EJECUCION: LECTORES Y ESCRITORES\n");
+    std::printf("============================================================\n");
+    std::printf("  Modo / Politica   : %s / %s (Traza: %s)\n",
+                modo.c_str(), pol.c_str(), traza_on ? "SI" : "NO");
+    std::printf("  Hebras (L / E)    : %ld lectoras, %ld escritoras (K = %ld)\n", L, E, K);
+    std::printf("  Duracion trabajo  : Lectura = %ld us | Escritura = %ld us\n", dl, de);
+    std::printf("  Total operaciones : %ld (%ld lecturas, %ld escrituras)\n",
+                (L + E) * K, L * K, E * K);
+
+    std::printf("------------------------------------------------------------\n");
+    std::printf("  INTEGRIDAD Y EXCLUSION MUTUA\n");
+    std::printf("------------------------------------------------------------\n");
+    std::printf("  version_final             : %ld (esperado: %ld)\n", reg.version, esperado_v);
+    std::printf("  doble_version_final       : %ld (esperado: %ld)\n", reg.doble_version, esperado_d);
+    std::printf("  inconsistencias           : %ld\n", incons);
+    std::printf("  violaciones_exclusion     : %ld\n", diag.violaciones.load());
+    std::printf("  lectores_simultaneos_max  : %d\n", diag.max_lect.load());
+
+    std::printf("------------------------------------------------------------\n");
+    std::printf("  RENDIMIENTO Y TIEMPOS DE ESPERA\n");
+    std::printf("------------------------------------------------------------\n");
+    std::printf("  Tiempo pared / CPU        : %.6f s / %.6f s\n", pared, cpu);
+    std::printf("  Espera lectoras (us)      : prom = %8.2f | max = %8.2f\n", lec_prom, ml / 1e3);
+    std::printf("  Espera escritoras (us)    : prom = %8.2f | max = %8.2f\n", esc_prom, me / 1e3);
+    if (modo == "atomic") {
+        std::printf("  Fallos atomicos           : ocupado=%ld | esc_esp=%ld | cas=%ld\n",
                     f.ocupado, f.escritores_esperando, f.cas_fallido);
-    std::printf("correcto=%s\n", correcto ? "SI" : "NO");
-    if (verifica) {
-        std::printf("politica_ok=%s evidencia=%ld\n", vr.ok ? "SI" : "NO", vr.evidencia);
-        if (!vr.ok) std::printf("violacion en anotacion %ld: %s\n", vr.anotacion, vr.regla.c_str());
     }
+
+    std::printf("============================================================\n");
+    std::printf("  RESULTADO FINAL: correcto=%s", correcto ? "SI" : "NO");
+    if (verifica) {
+        std::printf(" | politica_ok=%s (evidencia=%ld)", vr.ok ? "SI" : "NO", vr.evidencia);
+    }
+    std::printf("\n============================================================\n");
+    if (verifica && !vr.ok) {
+        std::printf("  [!] Violacion en anotacion %ld: %s\n", vr.anotacion, vr.regla.c_str());
+    }
+
     // Linea para scripts: modo,politica,L,E,K,dl,de,pared,cpu,lecprom,lecmax,escprom,escmax,lecsim,fallos,correcto,politica_ok,evidencia
     std::printf("CSV,%s,%s,%ld,%ld,%ld,%ld,%ld,%.6f,%.6f,%.2f,%.2f,%.2f,%.2f,%d,%ld,%s,%s,%ld\n",
                 modo.c_str(), pol.c_str(), L, E, K, dl, de, pared, cpu, lec_prom, ml / 1e3, esc_prom, me / 1e3,
                 diag.max_lect.load(), f.ocupado + f.escritores_esperando + f.cas_fallido,
                 correcto ? "SI" : "NO", verifica ? (vr.ok ? "SI" : "NO") : "NA", verifica ? vr.evidencia : 0L);
+
     return (correcto && (!verifica || vr.ok)) ? 0 : 3;
 }
